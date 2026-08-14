@@ -1,13 +1,17 @@
 #include <cstddef>
 #include <bitset>
 #include <cstdlib>
+#include <fstream>
+#include <ios>
 #include <print>
+#include <string>
 
 //TODO : Implement the ploting capabilities and benchmark the different GA's + the random one
 
 #include "esoteric.h"
 
-#define PRINT_DETAILS
+//#define PRINT_DETAILS
+#define PLOT_DATA 
 
 enum executionMethod
 {
@@ -26,6 +30,25 @@ private :
     std::bitset<sizeOfBitString> targetBitString = { } ;
     std::bitset<sizeOfBitString> currentBitString  = { } ;
     std::size_t currentBitStringInverseHammingDistance { } ;
+
+    //Plotting and file related
+
+    std::ofstream plotData{"data.txt", std::ios::out}; 
+
+    bool writeToFile(std::size_t measurement)
+    {
+        if (!plotData.is_open())
+        {
+            std::println("Opening the file failed. Plotting will not be available");
+            return false;
+        }
+
+        static std::size_t generationCounter = 1 ;
+        plotData << generationCounter << ' ' << measurement << '\n';
+        generationCounter += 1;
+
+        return true;
+    }
     
     void generateStarterBitString ()
     {
@@ -65,6 +88,8 @@ public :
     {
         currentBitStringInverseHammingDistance = targetCurrentInverseHammingDistance() ;
 
+        writeToFile(currentBitStringInverseHammingDistance);
+
         #ifdef PRINT_DETAILS
         std::println("Inverse hamming distance of current bit string : {} ,against target : {} is Hamming distance : {}",currentBitString.to_string(),targetBitString.to_string(),currentBitStringInverseHammingDistance);
         #endif
@@ -72,6 +97,7 @@ public :
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            plotData.close();
             std::exit(EXIT_SUCCESS);
         }
         else if(currentBitStringInverseHammingDistance == 0)
@@ -83,6 +109,7 @@ public :
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            plotData.close();
             std::exit(EXIT_SUCCESS);
         }
 
@@ -104,7 +131,7 @@ public :
             positionIndex = 0 ;
 
         positionIndex += 1 ;
-
+            
         return ;
     }
 
@@ -186,6 +213,10 @@ public :
         
         positionIndex -= 1 ;
 
+        #ifdef PLOT_DATA
+        writeToFile(currentBitStringInverseHammingDistance);
+        #endif
+
         return ;
     }
 
@@ -242,7 +273,12 @@ public :
         else
             positionIndex -= 1 ;
 
+        #ifdef PLOT_DATA
+        writeToFile(currentBitStringInverseHammingDistance);
+        #endif
+ 
         return ;
+        
     }
 
     void acquireTargetBitString(std::string bitString)
@@ -282,16 +318,21 @@ public :
         }
         
         std::println("Hilltop evaluation concluded closest match to be : {}",currentBitString.to_string()) ;
+
+        #ifdef PLOT_DATA
+        plotData.close();
+        #endif
+        
     }
 
 };
 
 int main()
 {
-    SAHC GA { } ;
+    SAHC<250,64> GA { } ;
 
-    GA.acquireTargetBitString("01010100") ;
-    GA.initializeRun(executionMethod::startingFromRandom);
+    GA.acquireTargetBitString("01010000101000001010010101100100111011011011110111110000100110101001010100101101101100111010010100110111000010111011110000101111101011011100011011111110100001111110100111010000101011100100100101010110000101000001110010110001011100100100010110100101111100001000101010110011011000100101000100011010011110000101100000110101") ;
+    GA.initializeRun(executionMethod::rightToLeft);
 
     return 0;
 }
