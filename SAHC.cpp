@@ -1,23 +1,19 @@
 #include <cstddef>
 #include <bitset>
 #include <cstdlib>
-#include <fstream>
-#include <ios>
 #include <print>
 #include <string>
-
-//TODO : Implement the ploting capabilities and benchmark the different GA's + the random one
 
 #include "esoteric.h"
 
 //#define PRINT_DETAILS
-#define PLOT_DATA 
+#define RUN_ALL
 
 enum executionMethod
 {
     leftToRight,
     rightToLeft,
-    startingFromRandom,
+    randomBitMutation,
 };
 
 template <std::size_t numbersOfRuns=100,std::size_t sizeOfBitString=8>
@@ -28,27 +24,9 @@ class SAHC
 private :
 
     std::bitset<sizeOfBitString> targetBitString = { } ;
-    std::bitset<sizeOfBitString> currentBitString  = { } ;
+    std::bitset<sizeOfBitString> currentBitString = { } ;
     std::size_t currentBitStringInverseHammingDistance { } ;
-
-    //Plotting and file related
-
-    std::ofstream plotData{"data.txt", std::ios::out}; 
-
-    bool writeToFile(std::size_t measurement)
-    {
-        if (!plotData.is_open())
-        {
-            std::println("Opening the file failed. Plotting will not be available");
-            return false;
-        }
-
-        static std::size_t generationCounter = 1 ;
-        plotData << generationCounter << ' ' << measurement << '\n';
-        generationCounter += 1;
-
-        return true;
-    }
+    bool targetFound = false ;
     
     void generateStarterBitString ()
     {
@@ -88,8 +66,6 @@ public :
     {
         currentBitStringInverseHammingDistance = targetCurrentInverseHammingDistance() ;
 
-        writeToFile(currentBitStringInverseHammingDistance);
-
         #ifdef PRINT_DETAILS
         std::println("Inverse hamming distance of current bit string : {} ,against target : {} is Hamming distance : {}",currentBitString.to_string(),targetBitString.to_string(),currentBitStringInverseHammingDistance);
         #endif
@@ -97,8 +73,7 @@ public :
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
-            plotData.close();
-            std::exit(EXIT_SUCCESS);
+            targetFound = true ;
         }
         else if(currentBitStringInverseHammingDistance == 0)
         {
@@ -109,8 +84,7 @@ public :
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
-            plotData.close();
-            std::exit(EXIT_SUCCESS);
+            targetFound = true ;
         }
 
         static std::size_t positionIndex = 0 ;
@@ -121,7 +95,9 @@ public :
 
         if(targetCurrentInverseHammingDistance() > oldHammingDistance)
         {
-            positionIndex += 1 ;
+            if(positionIndex != (sizeOfBitString-1))
+                positionIndex += 1 ;
+            
             return ;
         }
         else
@@ -130,7 +106,8 @@ public :
         if(positionIndex == (sizeOfBitString -1))
             positionIndex = 0 ;
 
-        positionIndex += 1 ;
+        if(positionIndex != (sizeOfBitString - 1))
+            positionIndex += 1 ;
             
         return ;
     }
@@ -146,7 +123,7 @@ public :
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
-            std::exit(EXIT_SUCCESS);
+            targetFound = true ;
         }
         else if(currentBitStringInverseHammingDistance == 0)
         {
@@ -157,7 +134,7 @@ public :
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
-            std::exit(EXIT_SUCCESS);
+            targetFound = true ;
         }
 
         static std::size_t positionIndex = sizeOfBitString - 1 ;
@@ -210,17 +187,13 @@ public :
 
             return ;
         }
-        
+
         positionIndex -= 1 ;
-
-        #ifdef PLOT_DATA
-        writeToFile(currentBitStringInverseHammingDistance);
-        #endif
-
+        
         return ;
     }
 
-    void mutateCurrentBitsRandomStartingPosition()
+    void mutateRandomBit()
     {
         currentBitStringInverseHammingDistance = targetCurrentInverseHammingDistance() ;
 
@@ -231,7 +204,7 @@ public :
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
-            std::exit(EXIT_SUCCESS);
+            targetFound = true ;
         }
         else if(currentBitStringInverseHammingDistance == 0)
         {
@@ -242,10 +215,12 @@ public :
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
-            std::exit(EXIT_SUCCESS);
+            targetFound = true ;
         }
 
-        static std::size_t positionIndex = prng::getInt(0,static_cast<int>(sizeOfBitString-1)) ;
+        static std::size_t positionIndex {} ;
+
+        positionIndex = prng::getInt(0,static_cast<int>(sizeOfBitString-1)) ;
 
         currentBitString.flip(positionIndex) ;
 
@@ -253,32 +228,12 @@ public :
 
         if(targetCurrentInverseHammingDistance() > oldHammingDistance)
         {
-            if((positionIndex + 1 > sizeOfBitString -1) && (positionIndex - 1 == 0))
-            {
-                if(prng::getInt(0,1) >= 0.5)
-                    positionIndex += 1 ;
-                else
-                    positionIndex -= 1 ;
-            }
             return ;
         }
         else
             currentBitString.flip(positionIndex) ;
-
-        if(positionIndex == (sizeOfBitString -1) || positionIndex == 0)
-            positionIndex = prng::getInt(0,static_cast<int>(sizeOfBitString -1)) ;
-
-        if(prng::getInt(0,1) >= 0.5)
-            positionIndex += 1 ;
-        else
-            positionIndex -= 1 ;
-
-        #ifdef PLOT_DATA
-        writeToFile(currentBitStringInverseHammingDistance);
-        #endif
- 
+               
         return ;
-        
     }
 
     void acquireTargetBitString(std::string bitString)
@@ -292,14 +247,16 @@ public :
         return ;
     }
 
-    void initializeRun(executionMethod method)
-    {
+    void initializeRun([[maybe_unused]] executionMethod method)
+    {        
         generateStarterBitString() ;
         
         targetCurrentInverseHammingDistance() ;
         
         for(std::size_t executionCounter {0uz} ; executionCounter < numbersOfRuns ; executionCounter ++)
         {
+            if(targetFound)
+                goto EARLY_FINISH ;
             
             switch(method)
             {
@@ -307,11 +264,11 @@ public :
                 break ;
                 case executionMethod::rightToLeft : mutateCurrentBitStringRightToLeft() ;
                 break ;
-                case executionMethod::startingFromRandom : mutateCurrentBitsRandomStartingPosition() ;
+                case executionMethod::randomBitMutation : mutateRandomBit() ;
                 break ;
                 default : mutateCurrentBitStringLeftToRight() ;
             }
-
+        
             #ifdef PRINT_DETAILS
             std::println("Current bit string : {} ,generation count : {}",currentBitString.to_string(),executionCounter+1);
             #endif
@@ -319,9 +276,8 @@ public :
         
         std::println("Hilltop evaluation concluded closest match to be : {}",currentBitString.to_string()) ;
 
-        #ifdef PLOT_DATA
-        plotData.close();
-        #endif
+        EARLY_FINISH :
+            return ;
         
     }
 
@@ -329,10 +285,26 @@ public :
 
 int main()
 {
-    SAHC<250,64> GA { } ;
+    SAHC<10,8> GArandom { } ;
 
-    GA.acquireTargetBitString("01010000101000001010010101100100111011011011110111110000100110101001010100101101101100111010010100110111000010111011110000101111101011011100011011111110100001111110100111010000101011100100100101010110000101000001110010110001011100100100010110100101111100001000101010110011011000100101000100011010011110000101100000110101") ;
-    GA.initializeRun(executionMethod::rightToLeft);
+    std::println("------------RANDOM BIT MUTATION------------");
 
+    GArandom.acquireTargetBitString("11110000") ;
+    GArandom.initializeRun(executionMethod::randomBitMutation);
+
+    SAHC<10,8> GAleftToRight { } ;
+
+    std::println("------------LEFT TO RIGHT MUTATION------------");
+    
+    GAleftToRight.acquireTargetBitString("11110000") ;
+    GAleftToRight.initializeRun(executionMethod::leftToRight);
+
+    SAHC<10,8> GArightToLeft { } ;
+
+    std::println("------------RIGHT TO LEFT MUTATION------------");
+    
+    GArightToLeft.acquireTargetBitString("11110000");
+    GArightToLeft.initializeRun(executionMethod::rightToLeft);
+    
     return 0;
 }
