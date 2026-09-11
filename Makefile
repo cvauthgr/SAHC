@@ -11,4 +11,4 @@ profile : SAHC.cpp
 	g++ -std=c++23 -g -pg SAHC.cpp -o SAHC && ./SAHC && gprof SAHC gmon.out > outputfile.txt
 
 clear : SAHC.cpp
-	rm SAHC outputfile.txt gmon.out
+	rm -q SAHC outputfile.txt gmon.out data.txt

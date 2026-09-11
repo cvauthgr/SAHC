@@ -7,7 +7,7 @@
 #include "esoteric.h"
 
 //#define PRINT_DETAILS
-#define RUN_ALL
+//#define RUN_ALL
 
 enum executionMethod
 {
@@ -41,7 +41,9 @@ private :
 
         #ifdef PRINT_DETAILS
         std::println("Pseudorandomly generated initial bit string : {}",currentBitString.to_string());
-        #endif    
+        #endif
+
+        return ;   
     }
 
 public :
@@ -142,7 +144,8 @@ public :
         #ifdef PRINT_DETAILS
         std::println("Current position index : {}",positionIndex);
         #endif
-        
+
+        std::println("First flip in function , value of positionIndex -> {}",positionIndex) ;
         currentBitString.flip(positionIndex) ;
 
         #ifdef PRINT_DETAILS
@@ -161,7 +164,10 @@ public :
             std::println("New bit string better");
             #endif
 
-            positionIndex -= 1 ;
+            std::println("Position index , line 167 : {}",positionIndex);
+            if(positionIndex != 0)
+                positionIndex -= 1 ; //<- IT'S HERE RAAAAAAAAAAAAAA
+            std::println("Position index , line 169 : {}",positionIndex);
             
             return;
         }
@@ -170,6 +176,8 @@ public :
             #ifdef PRINT_DETAILS
             std::println("Old bit string better");
             #endif
+
+            std::println("Old inverse hamming distance : {}",oldInverseHammingDistance);
             currentBitString.flip(positionIndex);
         }
         
@@ -179,7 +187,9 @@ public :
             std::println("Position index reset");
             #endif
 
-            positionIndex = sizeOfBitString - 1;
+            std::println("Position index , line 189 : {}",positionIndex);
+            positionIndex = sizeOfBitString - 1 ; //<- Here
+            std::println("Position index , line 191 : {}",positionIndex);
 
             #ifdef PRINT_DETAILS
             std::println("New position index : {}",positionIndex);
@@ -188,7 +198,9 @@ public :
             return ;
         }
 
-        positionIndex -= 1 ;
+        std::println("Position index , line 200 : {}",positionIndex);
+        positionIndex -= 1 ; // <- Or here 
+        std::println("Position index , line 202 : {}",positionIndex);
         
         return ;
     }
@@ -285,26 +297,30 @@ public :
 
 int main()
 {
-    SAHC<10,8> GArandom { } ;
-
-    std::println("------------RANDOM BIT MUTATION------------");
-
-    GArandom.acquireTargetBitString("11110000") ;
-    GArandom.initializeRun(executionMethod::randomBitMutation);
-
-    SAHC<10,8> GAleftToRight { } ;
-
-    std::println("------------LEFT TO RIGHT MUTATION------------");
     
-    GAleftToRight.acquireTargetBitString("11110000") ;
-    GAleftToRight.initializeRun(executionMethod::leftToRight);
+    for(std::size_t Iteration_index = {0uz} ; Iteration_index <= 5 ; Iteration_index ++)
+    {    
+        SAHC<10,8> GAleftToRight { } ;
 
-    SAHC<10,8> GArightToLeft { } ;
-
-    std::println("------------RIGHT TO LEFT MUTATION------------");
+        std::println("LEFT TO RIGHT MUTATION");
     
-    GArightToLeft.acquireTargetBitString("11110000");
-    GArightToLeft.initializeRun(executionMethod::rightToLeft);
+        GAleftToRight.acquireTargetBitString("11110000") ;
+        GAleftToRight.initializeRun(executionMethod::leftToRight);  
+
+        SAHC<10,8> GArandom { } ;
+
+        std::println("RANDOM BIT MUTATION");
+
+        GArandom.acquireTargetBitString("11110000") ;
+        GArandom.initializeRun(executionMethod::randomBitMutation);
+
+        SAHC<10,8> GArightToLeft { } ;
+
+        std::println("RIGHT TO LEFT MUTATION");
+
+        GArightToLeft.acquireTargetBitString("11110000");            
+        GArightToLeft.initializeRun(executionMethod::rightToLeft);
+     }
     
     return 0;
 }
