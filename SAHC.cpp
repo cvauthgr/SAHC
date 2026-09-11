@@ -6,9 +6,6 @@
 
 #include "esoteric.h"
 
-//#define PRINT_DETAILS
-//#define RUN_ALL
-
 enum executionMethod
 {
     leftToRight,
@@ -27,6 +24,7 @@ private :
     std::bitset<sizeOfBitString> currentBitString = { } ;
     std::size_t currentBitStringInverseHammingDistance { } ;
     bool targetFound = false ;
+    std::size_t stepsToGoal = 0 ;
     
     void generateStarterBitString ()
     {
@@ -39,9 +37,7 @@ private :
             currentBitString.flip(bitStringRandomPosition);
         }
 
-        #ifdef PRINT_DETAILS
         std::println("Pseudorandomly generated initial bit string : {}",currentBitString.to_string());
-        #endif
 
         return ;   
     }
@@ -66,26 +62,25 @@ public :
 
     void mutateCurrentBitStringRightToLeft()
     {
+        if(targetFound)
+            return;
+        
         currentBitStringInverseHammingDistance = targetCurrentInverseHammingDistance() ;
-
-        #ifdef PRINT_DETAILS
-        std::println("Inverse hamming distance of current bit string : {} ,against target : {} is Hamming distance : {}",currentBitString.to_string(),targetBitString.to_string(),currentBitStringInverseHammingDistance);
-        #endif
         
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            std::println("Steps to goal : {}",stepsToGoal) ;
             targetFound = true ;
         }
         else if(currentBitStringInverseHammingDistance == 0)
         {
-            #ifdef PRINT_DETAILS
             std::println("Current bit string is the opposite of target, flipping all current bit string bits...");
-            #endif
             
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            std::println("Steps to goal : 1") ;
             targetFound = true ;
         }
 
@@ -93,10 +88,14 @@ public :
 
         currentBitString.flip(positionIndex) ;
 
+        stepsToGoal ++ ; //Practically not counting steps but independent calls to the mutation function 
+
         std::size_t oldHammingDistance = currentBitStringInverseHammingDistance ;
 
         if(targetCurrentInverseHammingDistance() > oldHammingDistance)
         {
+            std::println("Found a better bit string -> {} | Step : {}",currentBitString.to_string(),stepsToGoal);
+            
             if(positionIndex != (sizeOfBitString-1))
                 positionIndex += 1 ;
             
@@ -106,7 +105,7 @@ public :
             currentBitString.flip(positionIndex) ;
 
         if(positionIndex == (sizeOfBitString -1))
-            positionIndex = 0 ;
+           positionIndex = 0 ;
 
         if(positionIndex != (sizeOfBitString - 1))
             positionIndex += 1 ;
@@ -116,117 +115,81 @@ public :
 
     void mutateCurrentBitStringLeftToRight()
     {
+        if(targetFound)
+            return;
+        
         currentBitStringInverseHammingDistance = targetCurrentInverseHammingDistance() ;
-
-        #ifdef PRINT_DETAILS
-        std::println("Inverse hamming distance of current bit string : {} ,against target : {} is Hamming distance : {}",currentBitString.to_string(),targetBitString.to_string(),currentBitStringInverseHammingDistance);
-        #endif
         
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            std::println("Steps to goal : {}",stepsToGoal) ;
             targetFound = true ;
         }
         else if(currentBitStringInverseHammingDistance == 0)
         {
-            #ifdef PRINT_DETAILS
             std::println("Current bit string is the opposite of target, flipping all current bit string bits...");
-            #endif
-            
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            std::println("Steps to goal : 1") ;
             targetFound = true ;
         }
 
         static std::size_t positionIndex = sizeOfBitString - 1 ;
-
-        #ifdef PRINT_DETAILS
-        std::println("Current position index : {}",positionIndex);
-        #endif
-
-        std::println("First flip in function , value of positionIndex -> {}",positionIndex) ;
+        
         currentBitString.flip(positionIndex) ;
 
-        #ifdef PRINT_DETAILS
-        std::println("Current bit string state : {}",currentBitString.to_string());
-        #endif
+        stepsToGoal ++ ;
 
         std::size_t oldInverseHammingDistance = currentBitStringInverseHammingDistance ;
 
-        #ifdef PRINT_DETAILS
-        std::println("Old inverse hamming distance : {}",oldInverseHammingDistance);
-        #endif
-
         if(targetCurrentInverseHammingDistance() > oldInverseHammingDistance)
         {
-            #ifdef PRINT_DETAILS
-            std::println("New bit string better");
-            #endif
-
-            std::println("Position index , line 167 : {}",positionIndex);
+            std::println("Found a better bit string -> {} | Step : {}",currentBitString.to_string(),stepsToGoal);            
+            
             if(positionIndex != 0)
-                positionIndex -= 1 ; //<- IT'S HERE RAAAAAAAAAAAAAA
-            std::println("Position index , line 169 : {}",positionIndex);
+                positionIndex -= 1 ; 
             
             return;
         }
         else
         {
-            #ifdef PRINT_DETAILS
-            std::println("Old bit string better");
-            #endif
-
-            std::println("Old inverse hamming distance : {}",oldInverseHammingDistance);
             currentBitString.flip(positionIndex);
         }
         
         if(positionIndex == 0)
         {
-            #ifdef PRINT_DETAILS
-            std::println("Position index reset");
-            #endif
-
-            std::println("Position index , line 189 : {}",positionIndex);
-            positionIndex = sizeOfBitString - 1 ; //<- Here
-            std::println("Position index , line 191 : {}",positionIndex);
-
-            #ifdef PRINT_DETAILS
-            std::println("New position index : {}",positionIndex);
-            #endif
+            positionIndex = sizeOfBitString - 1 ;
 
             return ;
         }
 
-        std::println("Position index , line 200 : {}",positionIndex);
-        positionIndex -= 1 ; // <- Or here 
-        std::println("Position index , line 202 : {}",positionIndex);
+        positionIndex -= 1 ; 
         
         return ;
     }
 
     void mutateRandomBit()
     {
+        if(targetFound)
+            return;
+        
         currentBitStringInverseHammingDistance = targetCurrentInverseHammingDistance() ;
-
-        #ifdef PRINT_DETAILS
-        std::println("Inverse hamming distance of current bit string : {} ,against target : {} is Hamming distance : {}",currentBitString.to_string(),targetBitString.to_string(),currentBitStringInverseHammingDistance);
-        #endif
         
         if(currentBitStringInverseHammingDistance == sizeOfBitString)
         {
             std::println("Target reached : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            std::println("Steps to goal : {}",stepsToGoal) ;
             targetFound = true ;
         }
         else if(currentBitStringInverseHammingDistance == 0)
         {
-            #ifdef PRINT_DETAILS
             std::println("Current bit string is the opposite of target, flipping all current bit string bits...");
-            #endif
-            
             currentBitString.flip();
             
             std::println("Target matched : {} == {}",currentBitString.to_string(),targetBitString.to_string()) ;
+            std::println("Steps to goal : 1") ;
             targetFound = true ;
         }
 
@@ -236,10 +199,13 @@ public :
 
         currentBitString.flip(positionIndex) ;
 
+        stepsToGoal ++ ;
+
         std::size_t oldHammingDistance = currentBitStringInverseHammingDistance ;
 
         if(targetCurrentInverseHammingDistance() > oldHammingDistance)
         {
+            std::println("Found a better bit string -> {} | Step : {}",currentBitString.to_string(),stepsToGoal) ;            
             return ;
         }
         else
@@ -252,9 +218,7 @@ public :
     {
         targetBitString = static_cast<std::bitset<sizeOfBitString>>(bitString) ;
         
-        #ifdef PRINT_DETAILS
-        std::println("Acquired target bit string : {}",targetBitString.to_string());
-        #endif
+        std::println("Target : {}",targetBitString.to_string()) ;
 
         return ;
     }
@@ -280,13 +244,11 @@ public :
                 break ;
                 default : mutateCurrentBitStringLeftToRight() ;
             }
-        
-            #ifdef PRINT_DETAILS
-            std::println("Current bit string : {} ,generation count : {}",currentBitString.to_string(),executionCounter+1);
-            #endif
+    
         }
         
         std::println("Hilltop evaluation concluded closest match to be : {}",currentBitString.to_string()) ;
+        std::println("Steps to goal : {}",stepsToGoal) ;
 
         EARLY_FINISH :
             return ;
@@ -298,7 +260,7 @@ public :
 int main()
 {
     
-    for(std::size_t Iteration_index = {0uz} ; Iteration_index <= 5 ; Iteration_index ++)
+    for(std::size_t Iteration_index = {0uz} ; Iteration_index <= 10 ; Iteration_index ++)
     {    
         SAHC<10,8> GAleftToRight { } ;
 
@@ -307,19 +269,19 @@ int main()
         GAleftToRight.acquireTargetBitString("11110000") ;
         GAleftToRight.initializeRun(executionMethod::leftToRight);  
 
-        SAHC<10,8> GArandom { } ;
+        // SAHC<10,8> GArandom { } ;
 
-        std::println("RANDOM BIT MUTATION");
+        // std::println("RANDOM BIT MUTATION");
 
-        GArandom.acquireTargetBitString("11110000") ;
-        GArandom.initializeRun(executionMethod::randomBitMutation);
+        // GArandom.acquireTargetBitString("11110000") ;
+        // GArandom.initializeRun(executionMethod::randomBitMutation);
 
-        SAHC<10,8> GArightToLeft { } ;
+        // SAHC<10,8> GArightToLeft { } ;
 
-        std::println("RIGHT TO LEFT MUTATION");
+        // std::println("RIGHT TO LEFT MUTATION");
 
-        GArightToLeft.acquireTargetBitString("11110000");            
-        GArightToLeft.initializeRun(executionMethod::rightToLeft);
+        // GArightToLeft.acquireTargetBitString("11110000");            
+        // GArightToLeft.initializeRun(executionMethod::rightToLeft);
      }
     
     return 0;
